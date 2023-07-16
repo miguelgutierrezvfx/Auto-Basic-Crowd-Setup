@@ -1,0 +1,104 @@
+# Import third-party modules.
+import crowdstoolutils
+
+#Create Geo Node and Set name and color
+OBJ = hou.node("/obj")
+COLOR = hou.Color((0.1,0.1,0.1))
+geoNode = OBJ.createNode("geo", "crowd_setup")
+geoNode.setColor(COLOR)
+
+#Get Agent Path
+agent_path = hou.ui.selectFile(title="Select the agent", file_type=hou.fileType.Fbx)
+
+#Create and Set Agent Node
+agent = geoNode.createNode("agent")
+agent.parm("agentname").set("$OS")
+agent.parm("input").set(2)
+agent.parm("fbxfile").set(agent_path)
+
+#Create Auxiliary Null
+auxNull = agent.createOutputNode("null", "auxiliary_null")
+
+#Get Agent Joints
+joints = crowdstoolutils.buildTransformMenu(auxNull)
+
+#Create and Set Agent Clip
+agentclip = agent.createOutputNode("agentclip")
+agentclip.parm("setcurrentclip").set(1)
+agentclip.parm("applylocomotion").set(1)
+
+for joint in joints:
+    
+    if joint.endswith("Hips"):
+        agentclip.parm("locomotionnode").set(joint)
+       
+#Create and Set Agent Prep
+agentprep = agentclip.createOutputNode("agentprep")
+agentprep.parm("upperlimbs").set(2)
+agentprep.parm("torso").set(1)
+agentprep.parm("lowerlimbs").set(2)
+
+for joint in joints:
+
+    #Left Leg
+    if joint.endswith("LeftUpLeg"):
+        agentprep.parm("upperleg1").set(joint)
+    if joint.endswith("LeftLeg"):
+        agentprep.parm("knee1").set(joint)
+    if joint.endswith("LeftFoot"):    
+        agentprep.parm("ankle1").set(joint)
+    if joint.endswith("LeftToeBase"):
+        agentprep.parm("toe1").set(joint)
+    
+    #Right Leg
+    if joint.endswith("RightUpLeg"):
+        agentprep.parm("upperleg2").set(joint)
+    if joint.endswith("RightLeg"):
+        agentprep.parm("knee2").set(joint)
+    if joint.endswith("RightFoot"):    
+        agentprep.parm("ankle2").set(joint)
+    if joint.endswith("RightToeBase"):
+        agentprep.parm("toe2").set(joint)
+
+    #Torso
+    if joint.endswith("Hips"):
+        agentprep.parm("hips1").set(joint)
+    if joint.endswith("Spine"):
+        agentprep.parm("lowerback1").set(joint)
+    if joint.endswith("Head"):    
+        agentprep.parm("head1").set(joint)
+        
+    #Left Arm
+    if joint.endswith("LeftShoulder"):
+        agentprep.parm("upperarm1").set(joint)
+    if joint.endswith("LeftArm"):
+        agentprep.parm("lowerarm1").set(joint)
+    if joint.endswith("LeftHand"):
+        agentprep.parm("hand1").set(joint)
+
+    #Right Arm
+    if joint.endswith("RightShoulder"):
+        agentprep.parm("upperarm2").set(joint)
+    if joint.endswith("RightArm"):
+        agentprep.parm("lowerarm2").set(joint)
+    if joint.endswith("RightHand"):
+        agentprep.parm("hand2").set(joint)
+        
+#Create Ankle Joints
+
+
+#Create Foot Plant CHOP Network
+agentprep.parm("createchopnet").pressButton()
+
+#Create Final Null
+finalNull = agentprep.createOutputNode("null", "OUT_AGENT")
+
+#Destroy Auxiliary Null
+auxNull.destroy()
+
+#Layout the nodes
+geoNode.layoutChildren()
+
+#Set display on last node
+finalNull.setDisplayFlag(True)
+finalNull.setRenderFlag(True)
